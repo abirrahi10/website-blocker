@@ -1,59 +1,74 @@
-// When a tab first gets opened
-//onActivated will listen for the tab and activeInfo will be populated
-chrome.tabs.onActivated.addListener(function (activeInfo) {
-    // 
-    chrome.tabs.get(activeInfo.tabId, function (tab) {
-        newUrl = tab.url;
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                console.log(this.responseText);
-            }
-        };
-        xhttp.open("POST", "http://127.0.0.1:5000/send_url");
-        xhttp.send("url=" + newUrl);
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+      const tab = await chrome.tabs.get(activeInfo.tabId);
+      console.log("Tab:", tab);
+      const newUrl = tab.url;
+      console.log("New URL:", newUrl);
 
-    });
+      const response = await fetch("http://127.0.0.1:5000/send_url", {
+          method: "POST",
+          body: new URLSearchParams({
+              url: newUrl,
+              timestamp: Math.floor(Date.now() / 1000),
+          }),
+      });
+
+      const responseData = await response.text();
+      console.log("Response:", responseData);
+  } catch (error) {
+      console.error("Error:", error);
+  }
 });
 
-chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
-    if (tab.active && change.url) {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (tab.active && changeInfo.url) {
+      console.log("Changed:", changeInfo.url);
+      try {
+          const response = await fetch("http://127.0.0.1:5000/send_url", {
+              method: "POST",
+              body: new URLSearchParams({
+                  url: changeInfo.url,
+                  timestamp: Math.floor(Date.now() / 1000),
+              }),
+          });
 
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                console.log(this.responseText);
-            }
-        };
-        xhttp.open("POST", "http://127.0.0.1:5000/send_url");
-        xhttp.send("url=" + change.url);
-
-    }
+          const responseData = await response.text();
+          console.log(responseData);
+      } catch (error) {
+          console.error("Error:", error);
+      }
+  }
 });
 
-// define a mapping between tabId and url:
-var tabToUrl = {};
+const tabToUrl = {};
 
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-    //store tabId and tab url as key value pair:
-    tabToUrl[tabId] = tab.url;
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url) {
+      tabToUrl[tabId] = tab.url;
+      console.log(tabToUrl);
+  }
 });
 
-chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
-    //since tab is not available inside onRemoved,
-    //we have to use the mapping we created above to get the removed tab url:
-    console.log(tabToUrl[tabId]);
+chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+  if (tabToUrl[tabId]) {
+      const removedUrl = tabToUrl[tabId];
+      console.log(removedUrl);
 
-    var xhttp2 = new XMLHttpRequest();
-    xhttp2.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            console.log(this.responseText);
-        }
-    };
-    xhttp2.open("POST", "http://127.0.0.1:5000/quit_url");
-    xhttp2.send("url=" + tabToUrl[tabId]);
+      fetch("http://127.0.0.1:5000/quit_url", {
+          method: "POST",
+          body: new URLSearchParams({
+              url: removedUrl,
+              timestamp: Math.floor(Date.now() / 1000),
+          }),
+      })
+          .then(response => response.text())
+          .then(responseText => {
+              console.log(responseText);
+          })
+          .catch(error => {
+              console.error("Error:", error);
+          });
 
-    // Remove information for non-existent tab
-    delete tabToUrl[tabId];
-
+      delete tabToUrl[tabId];
+  }
 });
