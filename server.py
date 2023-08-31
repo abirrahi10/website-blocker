@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect
 import time
 from urllib.parse import unquote
 from flask_cors import CORS
@@ -8,7 +8,9 @@ CORS(app)
 
 url_timestamp = {}
 url_viewtime = {}
+to_block_urls = ["www.youtube.com", "www.facebook.com"]
 prev_url = ""
+ip = "127.0.0.1"
 
 def url_strip(url):
     if "http://" in url or "https://" in url:
@@ -16,6 +18,27 @@ def url_strip(url):
     if "/" in url:
         url = url.split('/', 1)[0]
     return url
+
+def blocker(url):
+    with open(r"C:\Windows\System32\drivers\etc\hosts", "r+") as host:
+        content = host.read()
+        if url in content:
+            print(url + " is already blocked")
+            pass
+        else:
+            url_to_block = ip + "       " + url + "\n"
+            host.write(url_to_block)
+
+def unblocker():
+    with open(r"C:\Windows\System32\drivers\etc\hosts", "r+") as host:
+        content = host.read()
+        for i in range(len(to_block_urls)):
+            if to_block_urls[i] in content:
+                new_content = content.replace(to_block_urls[i], "")
+                host.truncate(0)
+                host.write(new_content)
+            else:
+                print(i + " has not been blocked")
 
 @app.route('/send_url', methods=['GET', 'POST'])
 def send_url():
@@ -47,7 +70,13 @@ def send_url():
         print("final timestamps: ", url_timestamp)
         print("final viewtimes: ", url_viewtime)
 
-        return jsonify({'message': 'success!'}), 200
+        if parent_url in to_block_urls and url_viewtime[parent_url] > 60:
+            # blocker(parent_url)
+            print("blocked url: " + parent_url)
+            return jsonify({'message': 'blocked!'}), 403
+        else:
+            print("url not blocked: " + parent_url)
+            return jsonify({'message': 'success!'}), 200
     
     # Return a response for GET request
     return jsonify({'message': 'GET request received.'}), 200

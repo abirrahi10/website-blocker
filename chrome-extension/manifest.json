@@ -1,12 +1,12 @@
 {
 	"manifest_version": 3,
-	"name": "Currenturl",
-	"description": "Fetches current tab url.",
-	"version": "0.1",
+	"name": "Block Websites",
+	"description": "Blocks user specified websites after a set amount of time",
+	"version": "2.0",
 	"author": "Abir Rahi",
 	"action": {
 		"default_icon": "ban-stop-icon-22.png",
-		"default_title": "Just observing your current url."
+		"default_title": "Block Websites"
 	},
 	"permissions": ["tabs", "activeTab", "storage"],
 	"host_permissions": ["http://127.0.0.1:5000/*"],
