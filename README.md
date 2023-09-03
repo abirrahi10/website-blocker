@@ -1,2 +1,2 @@
-# yt-shorts-blocker
-If you find yourself on youtube shorts for too long on your windows pc, run this script so you're forced a limit everyday
+# Website Blocker
+If you find yourself losing productivity to youtube or twitch or facebook, follow the instructions to limit yourself everyday!
