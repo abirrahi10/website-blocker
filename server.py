@@ -2,13 +2,14 @@ from flask import Flask, jsonify, request, redirect
 import time
 from urllib.parse import unquote
 from flask_cors import CORS
+import ctypes
 
 app = Flask(__name__)
 CORS(app)
 
 url_timestamp = {}
 url_viewtime = {}
-to_block_urls = ["www.youtube.com", "www.facebook.com"]
+to_block_urls = ["www.youtube.com", "www.facebook.com", "www.twitch.tv", "www.twitter.com", "www.instagram.com"]
 prev_url = ""
 ip = "127.0.0.1"
 
@@ -39,6 +40,13 @@ def unblocker():
                 host.write(new_content)
             else:
                 print(i + " has not been blocked")
+
+def window_refresh_alert():
+    WS_EX_TOPMOST = 0x40000
+    windowTitle = "Time to Block Some Websites!"
+    message = "Please close all your chrome windows. \n\nIf you don't, we cant stop you, but you wont feel great about it will you?"
+
+    ctypes.windll.user32.MessageBoxExW(None, message, windowTitle, WS_EX_TOPMOST)
 
 @app.route('/send_url', methods=['GET', 'POST'])
 def send_url():
@@ -71,8 +79,9 @@ def send_url():
         print("final viewtimes: ", url_viewtime)
 
         if parent_url in to_block_urls and url_viewtime[parent_url] > 60:
-            # blocker(parent_url)
+            blocker(parent_url)
             print("blocked url: " + parent_url)
+            window_refresh_alert()
             return jsonify({'message': 'blocked!'}), 403
         else:
             print("url not blocked: " + parent_url)
